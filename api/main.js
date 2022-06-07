@@ -108,8 +108,8 @@ router.get('/nearby', async (req, res) => {
     if (req.query.search) {
         input = 'keyword=' + req.query.search;
     }
-    let latitude = req.params.lat || '-6.186486';
-    let longitude = req.params.long || '106.834091';
+    let latitude = req.query.lat || '-6.186486';
+    let longitude = req.query.long || '106.834091';
     let token;
     let gdata = [];
     const config = {
@@ -153,22 +153,27 @@ router.get('/nearby', async (req, res) => {
         let resolvedGoogleData = results
             .filter(r => r.results.length)
             .map(function(item){
-                return gdata[item.index];
+                const temp = gdata[item.index]
+                const distance = getRange(latitude, longitude, temp.geometry.location.lat, temp.geometry.location.lng)
+                const range = {
+                    range: distance.toFixed(2)
+                }
+                return Object.assign(gdata[item.index], range);
             });
-
         res.send({results: resolvedGoogleData, token});
-
     } catch (e) {
         res.send(e);
     }
 })
 
-router.get('/details/:id', (req, res) => {
-    var id = req.params.id;
-    var config = {
+router.get('/details/', (req, res) => {
+    const id = req.query.id;
+    let latitude = req.query.lat || '-6.186486';
+    let longitude = req.query.long || '106.834091';
+    const config = {
         method: 'get',
-        url: 'https://maps.googleapis.com/maps/api/place/details/json?place_id='+ id +'&key=' + key,
-        headers: { }
+        url: 'https://maps.googleapis.com/maps/api/place/details/json?place_id=' + id + '&key=' + key,
+        headers: {}
     };
     axios(config)
         .then(function (response) {
@@ -200,12 +205,31 @@ router.get('/details/:id', (req, res) => {
             database.query(get_query, response.data['result'].place_id, function (err, result) {
                 if (err) throw err;
                 const output = response.data['result'];
-                res.send({results: output, app_reviews: result});
+                const distance = {
+                    range: getRange(latitude, longitude, output.geometry.location.lat, output.geometry.location.lng).toFixed(2)
+                }
+                const data = Object.assign(output, distance)
+                res.send({results: data, app_reviews: result});
             })
         })
         .catch(function (error) {
             console.log(error);
         });
 });
+
+function getRange(lat1, lon1, lat2, lon2){
+    const radlat1 = Math.PI * lat1 / 180;
+    const radlat2 = Math.PI * lat2 / 180;
+    const theta = lon1 - lon2;
+    const radtheta = Math.PI * theta / 180;
+    let dist = Math.sin(radlat1) * Math.sin(radlat2) + Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+    if (dist > 1) {
+        dist = 1;
+    }
+    dist = Math.acos(dist);
+    dist = dist * 180/Math.PI;
+    dist = dist * 60 * 1.1515;
+    return dist * 1.609344;
+}
 
 export default router;

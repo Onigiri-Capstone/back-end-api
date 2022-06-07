@@ -18,8 +18,8 @@ app.get('/', (req, res) => {
 })
 
 
-app.listen(process.env.PORT || 8080, function (){
-    console.log('listening on 8080')
+var listener = app.listen(process.env.PORT || 8080, function (){
+    console.log('listening on ' + listener.address().port)
 });
 
 
