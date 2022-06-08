@@ -1,4 +1,5 @@
 import mysql from 'mysql';
+import config from "./config.js";
 /*
 var connection = mysql.createConnection({
     host: "localhost",
@@ -9,10 +10,10 @@ var connection = mysql.createConnection({
 */
 
 var connection = mysql.createConnection({
-    host: "34.101.196.196",
-    user: "capstone",
-    password: "capstone2022",
-    database: 'c22_ps258_database'
+    host: config.DATABASE_HOST,
+    user: config.DATABASE_USER,
+    password: config.DATABASE_PASSWORD,
+    database: config.DATABASE
 });
 
 //test db connection
