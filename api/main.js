@@ -193,32 +193,46 @@ router.get('/details/', (req, res) => {
         url: 'https://maps.googleapis.com/maps/api/place/details/json?place_id=' + id + '&key=' + key,
         headers: {}
     };
+
+    async function getImage(data){
+        const promises = data.map(function (items){
+            return new Promise((resolve => {
+                const url = getPhoto(items['photo_reference'])
+                resolve(url)
+            }))
+        })
+        return Promise.all(promises);
+    }
+
+    function write(inputData, response){
+        database.query("SELECT * FROM restaurants WHERE place_id = ?", response.data['result'].place_id , function (err, result, fields) {
+            if (err) throw err;
+            if (result.length === 0){
+                database.query("INSERT INTO restaurants set ?", inputData, function (err, result, fields) {
+                    if (err) throw err;
+                })
+            } else {
+                database.query("UPDATE restaurants SET ? WHERE place_id = ?", [inputData, response.data['result'].place_id], function (err, result, fields) {
+                    if (err) throw err;
+                })
+            }
+        })
+    }
+
     axios(config)
         .then(function (response) {
             let inputData = {
                 "place_id" : response.data['result'].place_id,
                 "name" : response.data['result'].name,
                 "type" : JSON.stringify(response.data['result'].types),
-                "price_level" : response.data['result'].price_level,
+                "price_level" : response.data['result'].price_level || 0,
                 "rating" : response.data['result'].rating,
                 "address" : response.data['result'].formatted_address,
-                "phone" : response.data['result'].formatted_phone_number,
-                "photos" : JSON.stringify(response.data['result'].photos),
+                "phone" : response.data['result'].formatted_phone_number || 0,
+                "photos" : "None",
                 "latitude" : response.data['result'].geometry.location.lat,
                 "longitude" : response.data['result'].geometry.location.lng
             }
-            database.query("SELECT * FROM restaurants WHERE place_id = ?", response.data['result'].place_id , function (err, result, fields) {
-                if (err) throw err;
-                if (result.length === 0){
-                    database.query("INSERT INTO restaurants set ?", inputData, function (err, result, fields) {
-                        if (err) throw err;
-                    })
-                } else {
-                    database.query("UPDATE restaurants SET ? WHERE place_id = ?", [inputData, response.data['result'].place_id], function (err, result, fields) {
-                        if (err) throw err;
-                    })
-                }
-            })
             const get_query = "SELECT * FROM review WHERE review.restaurant_id = ?";
             database.query(get_query, response.data['result'].place_id, function (err, result) {
                 if (err) throw err;
@@ -228,13 +242,16 @@ router.get('/details/', (req, res) => {
                     photo_url: "Tidak Tersedia"
                 }
                 if (typeof response.data['result']['photos'] === "object") {
-                    const results = getPhoto(response.data['result']['photos'][0]['photo_reference'])
-                    results.then(function (link){
-                        datas.photo_url = link
+                    const uri = getImage(response.data['result']['photos'])
+                    uri.then(function (out){
+                        datas.photo_url = out
+                        inputData.photos = JSON.stringify(out)
+                        write(inputData, response)
                         const data = Object.assign(output, datas)
                         res.send({results: data, app_reviews: result});
                     })
                 } else {
+                    write(inputData, response)
                     const data = Object.assign(output, datas)
                     res.send({results: data, app_reviews: result});
                 }
@@ -260,7 +277,6 @@ function getRange(lat1, lon1, lat2, lon2){
     return dist * 1.609344;
 }
 
-
 async function getPhoto(ref) {
     const url = 'https://maps.googleapis.com/maps/api/place/photo?photoreference='+ ref +'&sensor=false&maxheight=2250&maxwidth=4000&key=' + key;
     try {
@@ -271,5 +287,6 @@ async function getPhoto(ref) {
         return 'Tidak Tersedia';
     }
 }
+
 
 export default router;
