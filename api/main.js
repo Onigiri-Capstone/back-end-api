@@ -1,10 +1,11 @@
 import express from "express";
 import database from "../database.js";
 import axios from "axios";
+import config from "../config.js"
 
 const router = express.Router();
 
-const key = 'AIzaSyBiN3kGsCgH_yH8UyR8X8h5mlo98VK-UVc'
+const key = config.GOOGLE_API_KEY
 
 router.get('/all', (req, res) => {
     var input = "%" + req.query.search + "%";
@@ -26,7 +27,6 @@ router.get('/all', (req, res) => {
         var search = data[0];
         var location = 'Jakarta';
         var url = 'https://maps.googleapis.com/maps/api/place/textsearch/json?query=' + search + '&key=' + key;
-        //var url = 'https://maps.googleapis.com/maps/api/place/textsearch/json?query=' + search + '%20in%20' + location + '&key=AIzaSyBiN3kGsCgH_yH8UyR8X8h5mlo98VK-UVc';
         var config = {
             method: 'get',
             url: url,

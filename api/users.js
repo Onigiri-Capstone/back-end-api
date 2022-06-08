@@ -1,8 +1,9 @@
 import express from "express";
 import database from '../database.js';
 import axios from "axios";
+import config from '../config.js'
 
-const key = 'AIzaSyBiN3kGsCgH_yH8UyR8X8h5mlo98VK-UVc'
+const key = config.GOOGLE_API_KEY
 
 const router = express.Router();
 
