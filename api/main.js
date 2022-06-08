@@ -260,16 +260,9 @@ function getRange(lat1, lon1, lat2, lon2){
     return dist * 1.609344;
 }
 
-router.get('/test', async (req, res) => {
-    const result = getPhoto('Aap_uEAwhtVnODlLsxUFUv1OhxtAqYGKbVFdJi5IL44_y8CSvd2WLNTTr55VMwwhaT9AkeSY8CC5QExj3L51YoALugJLnC8Tok-NPoVJMVGG5mnN1yEyDEWI9vHomUMCLpmYiJvAr2F9D5m0asOHMmjfksvy8W_aEHklrf68K4t1X5Sjfi77')
-    result.then(function (link){
-        res.send(link)
-    })
-
-})
 
 async function getPhoto(ref) {
-    const url = 'https://maps.googleapis.com/maps/api/place/photo?photoreference='+ ref +'&sensor=false&maxheight=2250&maxwidth=4000&key=AIzaSyAFItHbNgV4mNRrrxW7DeZUf4kyRsbzWew';
+    const url = 'https://maps.googleapis.com/maps/api/place/photo?photoreference='+ ref +'&sensor=false&maxheight=2250&maxwidth=4000&key=' + key;
     try {
         return await axios.get(url).then(res => {
             return res.request._redirectable._options.href
