@@ -114,7 +114,7 @@ router.get('/nearby', async (req, res) => {
     let gdata = [];
     const config = {
         method: 'get',
-        url: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + latitude + '%2C' + longitude + '&radius=20000&type=restaurant|cafe&' + input + '&key=' + key,
+        url: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + latitude + '%2C' + longitude + '&radius=20000&type=restaurant|cafe|food|meal_delivery|meal_takeaway|bakery&' + input + '&key=' + key,
         headers: {}
     };
 
@@ -142,6 +142,30 @@ router.get('/nearby', async (req, res) => {
         return Promise.all(promises)
     }
 
+    async function filter(results){
+        const final = await results.filter(r => r.results.length).map(async function (item) {
+            const temp = gdata[item.index]
+            const distance = getRange(latitude, longitude, temp.geometry.location.lat, temp.geometry.location.lng)
+            const data = {
+                range: distance.toFixed(2),
+                photo_url: "Tidak Tersedia"
+            }
+            if (typeof gdata[item.index].photos === "object") {
+                return new Promise((resolve) => {
+                    const result = getPhoto(gdata[item.index].photos[0]['photo_reference'])
+                    result.then(function (link){
+                        data['photo_url'] = link
+                        if (data['photo_url']  !== "Tidak Tersedia"){
+                            resolve(Object.assign(gdata[item.index], data))
+                        }
+                    })
+                })
+            }
+            return Object.assign(gdata[item.index], data);
+        });
+        return Promise.all(final)
+    }
+
     try {
         const response = await axios(config)
 
@@ -150,17 +174,11 @@ router.get('/nearby', async (req, res) => {
 
         let results = (await getQueries(gdata));
 
-        let resolvedGoogleData = results
-            .filter(r => r.results.length)
-            .map(function(item){
-                const temp = gdata[item.index]
-                const distance = getRange(latitude, longitude, temp.geometry.location.lat, temp.geometry.location.lng)
-                const range = {
-                    range: distance.toFixed(2)
-                }
-                return Object.assign(gdata[item.index], range);
-            });
-        res.send({results: resolvedGoogleData, token});
+        let resolvedGoogleData = filter(results)
+
+        resolvedGoogleData.then(function (data){
+            res.send({results: data, token});
+        })
     } catch (e) {
         res.send(e);
     }
@@ -205,11 +223,21 @@ router.get('/details/', (req, res) => {
             database.query(get_query, response.data['result'].place_id, function (err, result) {
                 if (err) throw err;
                 const output = response.data['result'];
-                const distance = {
-                    range: getRange(latitude, longitude, output.geometry.location.lat, output.geometry.location.lng).toFixed(2)
+                const datas = {
+                    range: getRange(latitude, longitude, output.geometry.location.lat, output.geometry.location.lng).toFixed(2),
+                    photo_url: "Tidak Tersedia"
                 }
-                const data = Object.assign(output, distance)
-                res.send({results: data, app_reviews: result});
+                if (typeof response.data['result']['photos'] === "object") {
+                    const results = getPhoto(response.data['result']['photos'][0]['photo_reference'])
+                    results.then(function (link){
+                        datas.photo_url = link
+                        const data = Object.assign(output, datas)
+                        res.send({results: data, app_reviews: result});
+                    })
+                } else {
+                    const data = Object.assign(output, datas)
+                    res.send({results: data, app_reviews: result});
+                }
             })
         })
         .catch(function (error) {
@@ -230,6 +258,25 @@ function getRange(lat1, lon1, lat2, lon2){
     dist = dist * 180/Math.PI;
     dist = dist * 60 * 1.1515;
     return dist * 1.609344;
+}
+
+router.get('/test', async (req, res) => {
+    const result = getPhoto('Aap_uEAwhtVnODlLsxUFUv1OhxtAqYGKbVFdJi5IL44_y8CSvd2WLNTTr55VMwwhaT9AkeSY8CC5QExj3L51YoALugJLnC8Tok-NPoVJMVGG5mnN1yEyDEWI9vHomUMCLpmYiJvAr2F9D5m0asOHMmjfksvy8W_aEHklrf68K4t1X5Sjfi77')
+    result.then(function (link){
+        res.send(link)
+    })
+
+})
+
+async function getPhoto(ref) {
+    const url = 'https://maps.googleapis.com/maps/api/place/photo?photoreference='+ ref +'&sensor=false&maxheight=2250&maxwidth=4000&key=AIzaSyAFItHbNgV4mNRrrxW7DeZUf4kyRsbzWew';
+    try {
+        return await axios.get(url).then(res => {
+            return res.request._redirectable._options.href
+        });
+    } catch (e) {
+        return 'Tidak Tersedia';
+    }
 }
 
 export default router;
