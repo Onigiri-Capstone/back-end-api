@@ -104,9 +104,13 @@ router.get('/category', async (req, res) => {
 })
 
 router.get('/nearby', async (req, res) => {
-    let input;
+    let input = '';
+    let nextPage = '';
     if (req.query.search) {
-        input = 'keyword=' + req.query.search;
+        input = '&keyword=' + req.query.search;
+    }
+    if (req.query.token) {
+        nextPage = '&pagetoken=' + req.query.token;
     }
     let latitude = req.query.lat || '-6.186486';
     let longitude = req.query.long || '106.834091';
@@ -114,9 +118,11 @@ router.get('/nearby', async (req, res) => {
     let gdata = [];
     const config = {
         method: 'get',
-        url: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + latitude + '%2C' + longitude + '&radius=20000&type=restaurant|cafe|food|meal_delivery|meal_takeaway|bakery&' + input + '&key=' + key,
+        url: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + latitude + '%2C' + longitude + '&radius=20000&type=restaurant|cafe|food|meal_delivery|meal_takeaway|bakery' + input + '&key=' + key + nextPage,
         headers: {}
     };
+
+    console.log(config.url)
 
     const getQueryAsync = function(query, word, index){
         return new Promise((resolve, reject) => {
