@@ -232,7 +232,7 @@ router.get('/details/', (req, res) => {
                 "name" : response.data['result'].name,
                 "type" : JSON.stringify(response.data['result'].types),
                 "price_level" : response.data['result'].price_level || 0,
-                "rating" : response.data['result'].rating,
+                "rating" : response.data['result'].rating || 0,
                 "address" : response.data['result'].formatted_address,
                 "phone" : response.data['result'].formatted_phone_number || 0,
                 "photos" : "None",
