@@ -43,7 +43,7 @@ router.post('/favourites', (req, res) => {
 
     database.query(queries, data, function (err) {
         if (err) {
-            res.status(500).json({message: failed, error: err});
+            res.status(500).json({message: 'Failed', error: err});
         }
         res.status(201).json({success: true, message: 'Success'})
     });
@@ -51,12 +51,12 @@ router.post('/favourites', (req, res) => {
 
 router.delete('/favourites', (req, res) => {
     const data = {...req.body}
-    const id = data.id
-
-    const queries = "DELETE FROM user_favourites WHERE id = ?";
-    database.query(queries, id, function (err) {
+    const user_id = data.user_id
+    const restaurant_id = data.restaurant_id
+    const queries = "DELETE FROM user_favourites WHERE user_id = ? AND restaurant_id = ?";
+    database.query(queries, [user_id, restaurant_id], function (err) {
         if (err) {
-            res.status(500).json({message: failed, error: err});
+            res.status(500).json({message: 'Failed', error: err});
         }
         res.status(200).json({success: true, message: 'Success'})
     });
