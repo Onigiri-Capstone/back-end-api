@@ -40,13 +40,25 @@ router.post('/review', (req, res) => {
 router.post('/favourites', (req, res) => {
     const data = {...req.body}
     const queries = "INSERT INTO user_favourites SET ?";
+    const id = data.user_id;
+    const r_id = data.restaurant_id;
+    const check_queries = "SELECT * FROM user_favourites WHERE user_id = ? AND restaurant_id = ?";
 
-    database.query(queries, data, function (err) {
-        if (err) {
+    database.query(check_queries, [id, r_id], function (err, result) {
+        if (err){
             res.status(500).json({message: 'Failed', error: err});
         }
-        res.status(201).json({success: true, message: 'Success'})
-    });
+        if (result.length === 0){
+            database.query(queries, data, function (err) {
+                if (err) {
+                    res.status(500).json({message: 'Failed', error: err});
+                }
+                res.status(201).json({success: true, message: 'Success'})
+            });
+        } else {
+            res.status(201).json({success: true, message: 'Data Sudah Ada'})
+        }
+    })
 });
 
 router.delete('/favourites', (req, res) => {
