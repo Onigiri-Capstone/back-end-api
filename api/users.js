@@ -123,10 +123,10 @@ router.get('/recommendation', (req, res) => {
     const latitude = req.query.lat
     const longitude = req.query.long
 
-    const query = " SELECT * , (3956 * 2 * ASIN(SQRT( POWER(SIN(( "+ latitude +" - latitude) *  pi()/180 / 2), 2) +COS( "+ latitude +" * pi()/180) * COS(latitude * pi()/180) * POWER(SIN(( "+ longitude + " - longitude) * pi()/180 / 2), 2) ))) as distance  \n" +
+    const query = " SELECT * , ROUND((3956 * 2 * ASIN(SQRT( POWER(SIN(( "+ latitude +" - latitude) *  pi()/180 / 2), 2) +COS( "+ latitude +" * pi()/180) * COS(latitude * pi()/180) * POWER(SIN(( "+ longitude + " - longitude) * pi()/180 / 2), 2) ))), 0) as distance  \n" +
         "from restaurants  \n" +
-        "having  distance <= 30 \n" +
-        "order by distance"
+        "having distance <= 30 \n" +
+        "order by distance, rating ASC"
 
     database.query(query, function (err, results){
         if (err) throw err;
