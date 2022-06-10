@@ -122,7 +122,90 @@ router.get('/nearby', async (req, res) => {
         headers: {}
     };
 
-    console.log(config.url)
+    const getQueryAsync = function(query, word, index){
+        return new Promise((resolve, reject) => {
+            database.query(query, word, function (err, results) {
+                if (err)
+                    return reject(err);
+                resolve({results, index});
+            })
+        });
+    }
+
+    const getQueries = function(gdata){
+        const queryData = gdata.map((gdatum, index) => ({
+            query: "SELECT * FROM mui_restaurant WHERE name LIKE ? LIMIT 1",
+            word: '%' + gdatum.name.replace(/ /g, "%") + '%',
+            index,
+        }));
+
+        const promises = queryData.map(({query, word, index}) => {
+            return getQueryAsync(query, word, index);
+        });
+
+        return Promise.all(promises)
+    }
+
+    async function filter(results){
+        const final = await results.filter(r => r.results.length).map(async function (item) {
+            const temp = gdata[item.index]
+            const distance = getRange(latitude, longitude, temp.geometry.location.lat, temp.geometry.location.lng)
+            const data = {
+                range: distance.toFixed(2),
+                photo_url: "Tidak Tersedia"
+            }
+            if (typeof gdata[item.index].photos === "object") {
+                return new Promise((resolve) => {
+                    const result = getPhoto(gdata[item.index].photos[0]['photo_reference'])
+                    result.then(function (link){
+                        data['photo_url'] = link
+                        if (data['photo_url']  !== "Tidak Tersedia"){
+                            resolve(Object.assign(gdata[item.index], data))
+                        }
+                    })
+                })
+            }
+            return Object.assign(gdata[item.index], data)
+        });
+        return Promise.all(final)
+    }
+
+    try {
+        const response = await axios(config)
+
+        token = response.data['next_page_token']
+        gdata = response.data['results']
+
+        let results = (await getQueries(gdata));
+
+        let resolvedGoogleData = filter(results)
+
+        resolvedGoogleData.then(function (data){
+            res.send({results: data, token});
+        })
+    } catch (e) {
+        res.send(e);
+    }
+})
+
+router.get('/recommendation', async (req, res) => {
+    let input = '';
+    let nextPage = '';
+    if (req.query.search) {
+        input = '&keyword=' + req.query.search;
+    }
+    if (req.query.token) {
+        nextPage = '&pagetoken=' + req.query.token;
+    }
+    let latitude = req.query.lat || '-6.186486';
+    let longitude = req.query.long || '106.834091';
+    let token;
+    let gdata = [];
+    const config = {
+        method: 'get',
+        url: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + latitude + '%2C' + longitude + '&radius=50000&type=restaurant|cafe|food|meal_delivery|meal_takeaway|bakery' + input + '&key=' + key + nextPage,
+        headers: {}
+    };
 
     const getQueryAsync = function(query, word, index){
         return new Promise((resolve, reject) => {
@@ -167,7 +250,7 @@ router.get('/nearby', async (req, res) => {
                     })
                 })
             }
-            return Object.assign(gdata[item.index], data);
+            return Object.assign(gdata[item.index], data)
         });
         return Promise.all(final)
     }
@@ -190,6 +273,59 @@ router.get('/nearby', async (req, res) => {
     }
 })
 
+/*
+router.get('/rec-beta', (async (req, res) => {
+    const input = '%' + req.query.search.replace(/ /g, '%') + '%'
+    const latitude = req.query.lat || '-6.200000'
+    const longitude = req.query.long || '106.816666'
+    const query = "SELECT * FROM mui_restaurant WHERE name LIKE ? LIMIT 5"
+
+    function getDB() {
+        return new Promise((resolve, reject) => {
+            database.query(query, input, function (err, result) {
+                if (err) reject(err);
+                resolve(result)
+            })
+        })
+    }
+
+    const getGoogle = function (pull){
+        const resData = pull.map(function (item){
+            return new Promise(async (resolve, reject) => {
+                const keyword = item.name
+                console.log(keyword)
+                const config = {
+                    method: 'get',
+                    url: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + latitude + '%2C' + longitude + '&radius=10000&type=restaurant|cafe|food|meal_delivery|meal_takeaway|bakery&keyword=' + keyword + '&key=' + key,
+                    headers: {}
+                };
+                const result = await axios(config)
+                resolve(result.data['results'])
+            })
+        })
+        return Promise.all(resData)
+    }
+
+    try {
+        const pull = await getDB()
+
+        console.log(pull)
+
+        const data = await getGoogle(pull)
+        const output = [];
+        data.map(function (items){
+            console.log(items.length)
+            items.map((item) => {
+                output.push(item)
+            })
+        })
+
+        res.send({result: output})
+    } catch (e){
+        res.send(e)
+    }
+}))
+*/
 router.get('/details/', (req, res) => {
     const id = req.query.id;
     let latitude = req.query.lat || '-6.186486';

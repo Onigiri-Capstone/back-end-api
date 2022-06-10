@@ -1,5 +1,6 @@
 import mysql from 'mysql';
 import config from "./config.js";
+
 /*
 var connection = mysql.createConnection({
     host: "localhost",
