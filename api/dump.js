@@ -17,7 +17,7 @@ router.get('/mui', (req, res) => {
 })
 
 router.get('/restaurants', (req, res) => {
-    database.query("SELECT * FROM restaurants", function (err, result, fields) {
+    database.query("SELECT COUNT(*) FROM restaurants", function (err, result, fields) {
         if (err) throw err;
         res.send(result)
     })

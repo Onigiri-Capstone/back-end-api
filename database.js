@@ -17,6 +17,7 @@ var connection = mysql.createConnection({
     database: config.DATABASE
 });
 
+
 //test db connection
 connection.connect(function (error){
     if (error){
