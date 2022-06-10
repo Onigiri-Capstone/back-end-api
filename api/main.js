@@ -134,7 +134,7 @@ router.get('/nearby', async (req, res) => {
 
     const getQueries = function(gdata){
         const queryData = gdata.map((gdatum, index) => ({
-            query: "SELECT * FROM mui_restaurant WHERE name LIKE ? LIMIT 1",
+            query: "SELECT * FROM restaurants WHERE name LIKE ? LIMIT 1",
             word: '%' + gdatum.name.replace(/ /g, "%") + '%',
             index,
         }));
@@ -273,12 +273,21 @@ router.get('/recommendation', async (req, res) => {
     }
 })
 
-/*
 router.get('/rec-beta', (async (req, res) => {
-    const input = '%' + req.query.search.replace(/ /g, '%') + '%'
+    //const input = '%' + req.query.search.replace(/ /g, '%') + '%'
+    let input
+
+    if (req.query.search){
+        input = 'WHERE name LIKE \''+ '%' + req.query.search.replace(/ /g, '%') + '%' +'\''
+    }
+
     const latitude = req.query.lat || '-6.200000'
     const longitude = req.query.long || '106.816666'
-    const query = "SELECT * FROM mui_restaurant WHERE name LIKE ? LIMIT 5"
+    const query = " SELECT * , ROUND((3956 * 2 * ASIN(SQRT( POWER(SIN(( "+ latitude +" - latitude) *  pi()/180 / 2), 2) +COS( "+ latitude +" * pi()/180) * COS(latitude * pi()/180) * POWER(SIN(( "+ longitude + " - longitude) * pi()/180 / 2), 2) ))), 1) as distance  \n" +
+        "from restaurants "+ input + "having distance <= 20 \n" +
+        "order by distance, rating DESC LIMIT 2"
+
+    //const query = "SELECT * FROM mui_restaurant WHERE name LIKE ? LIMIT 5"
 
     function getDB() {
         return new Promise((resolve, reject) => {
@@ -293,7 +302,6 @@ router.get('/rec-beta', (async (req, res) => {
         const resData = pull.map(function (item){
             return new Promise(async (resolve, reject) => {
                 const keyword = item.name
-                console.log(keyword)
                 const config = {
                     method: 'get',
                     url: 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=' + latitude + '%2C' + longitude + '&radius=10000&type=restaurant|cafe|food|meal_delivery|meal_takeaway|bakery&keyword=' + keyword + '&key=' + key,
@@ -325,7 +333,7 @@ router.get('/rec-beta', (async (req, res) => {
         res.send(e)
     }
 }))
-*/
+
 router.get('/details/', (req, res) => {
     const id = req.query.id;
     let latitude = req.query.lat || '-6.186486';

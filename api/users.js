@@ -122,11 +122,14 @@ router.get('/favourites', async (req, res) => {
 router.get('/recommendation', (req, res) => {
     const latitude = req.query.lat
     const longitude = req.query.long
+    let search = ''
+    if (req.query.first){
+        search = 'WHERE name LIKE \''+ '%' + req.query.first.replace(/ /g, '%') + '%' +'\''
+    }
 
-    const query = " SELECT * , ROUND((3956 * 2 * ASIN(SQRT( POWER(SIN(( "+ latitude +" - latitude) *  pi()/180 / 2), 2) +COS( "+ latitude +" * pi()/180) * COS(latitude * pi()/180) * POWER(SIN(( "+ longitude + " - longitude) * pi()/180 / 2), 2) ))), 0) as distance  \n" +
-        "from restaurants  \n" +
-        "having distance <= 30 \n" +
-        "order by distance, rating DESC"
+    const query = " SELECT * , ROUND((3956 * 2 * ASIN(SQRT( POWER(SIN(( "+ latitude +" - latitude) *  pi()/180 / 2), 2) +COS( "+ latitude +" * pi()/180) * COS(latitude * pi()/180) * POWER(SIN(( "+ longitude + " - longitude) * pi()/180 / 2), 2) ))), 1) as distance  \n" +
+        "from restaurants "+ search + "having distance <= 30 \n" +
+        "order by distance, rating DESC LIMIT 30"
 
     database.query(query, function (err, results){
         if (err) throw err;
