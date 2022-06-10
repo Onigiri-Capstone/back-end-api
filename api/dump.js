@@ -90,10 +90,11 @@ router.get('/import-all', async (req, res) => {
 })
 */
 
-router.get('/import', (async (req, res) => {
-    const name = req.query.name
-    const latitude = req.query.lat
-    const longitude = req.query.long
+router.post('/import', (async (req, res) => {
+    const body = {...req.body}
+    const name = body.name
+    const latitude = body.lat
+    const longitude = body.long
 
     function getGoogle() {
         return new Promise(async (resolve, reject) => {
