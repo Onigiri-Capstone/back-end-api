@@ -122,9 +122,16 @@ router.get('/favourites', async (req, res) => {
 router.get('/recommendation', (req, res) => {
     const latitude = req.query.lat
     const longitude = req.query.long
+    let inp = [req.query.first, req.query.second, req.query.third]
+
+    const value = inp.filter(items => {
+        return items !== undefined
+    })
+
     let search = ''
-    if (req.query.first){
-        search = 'WHERE name LIKE \''+ '%' + req.query.first.replace(/ /g, '%') + '%' +'\''
+
+    if (value.length !== 0){
+        search = 'WHERE name LIKE \''+ '%' + value[Math.floor(Math.random() * value.length)].replace(/ /g, '%') + '%' +'\''
     }
 
     const query = " SELECT * , ROUND((3956 * 2 * ASIN(SQRT( POWER(SIN(( "+ latitude +" - latitude) *  pi()/180 / 2), 2) +COS( "+ latitude +" * pi()/180) * COS(latitude * pi()/180) * POWER(SIN(( "+ longitude + " - longitude) * pi()/180 / 2), 2) ))), 1) as distance  \n" +
