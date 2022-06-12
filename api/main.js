@@ -237,7 +237,7 @@ router.get('/recommendation', async (req, res) => {
             const distance = getRange(latitude, longitude, temp.geometry.location.lat, temp.geometry.location.lng)
             const data = {
                 range: distance.toFixed(2),
-                photo_url: "Tidak Tersedia"
+                photo_url: []
             }
             if (typeof gdata[item.index].photos === "object") {
                 return new Promise((resolve) => {
@@ -389,7 +389,7 @@ router.get('/details/', (req, res) => {
                 const output = response.data['result'];
                 const datas = {
                     range: getRange(latitude, longitude, output.geometry.location.lat, output.geometry.location.lng).toFixed(2),
-                    photo_url: "Tidak Tersedia"
+                    photo_url: []
                 }
                 if (typeof response.data['result']['photos'] === "object") {
                     const uri = getImage(response.data['result']['photos'])
