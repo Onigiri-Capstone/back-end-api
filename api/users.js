@@ -134,42 +134,14 @@ router.get('/recommendation', (req, res) => {
         search = 'WHERE name LIKE \''+ '%' + value[Math.floor(Math.random() * value.length)].replace(/ /g, '%') + '%' +'\''
     }
 
-    function getPhotoMap(results){
-        const promises = results.map(function (items) {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    const parsed = JSON.parse(items.photos)
-                    const url = await getPhoto(parsed[0].photo_reference)
-                    resolve(Object.assign(items, { photo_url : url }))
-                } catch (e) {
-                    resolve(items)
-                }
-            })
-        })
-        return Promise.all(promises)
-    }
-
     const query = " SELECT * , ROUND((3956 * 2 * ASIN(SQRT( POWER(SIN(( "+ latitude +" - latitude) *  pi()/180 / 2), 2) +COS( "+ latitude +" * pi()/180) * COS(latitude * pi()/180) * POWER(SIN(( "+ longitude + " - longitude) * pi()/180 / 2), 2) ))), 1) as distance  \n" +
         "from restaurants "+ search + "having distance <= 30 \n" +
         "order by distance, rating DESC LIMIT 30"
 
     database.query(query, async function (err, results) {
         if (err) throw err;
-
-        const resulted = await getPhotoMap(results)
-        res.send(resulted);
+        res.send(results);
     })
 })
-
-async function getPhoto(ref) {
-    const url = 'https://maps.googleapis.com/maps/api/place/photo?photoreference='+ ref +'&sensor=false&maxheight=2250&maxwidth=4000&key=' + key;
-    try {
-        return await axios.get(url).then(res => {
-            return res.request._redirectable._options.href
-        });
-    } catch (e) {
-        return 'Tidak Tersedia';
-    }
-}
 
 export default router;
